@@ -9,57 +9,27 @@ datasource db {
 
 enum Role {
   EMPLOYEE
-  MANAGER
   ADMIN
-}
-
-enum DocumentType {
-  ID
-  RIGHT_TO_WORK
-  OTHER
 }
 
 enum ShiftStatus {
   IN_PROGRESS
   COMPLETED
-  APPROVED
-}
-
-enum RequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
 }
 
 model User {
-  id                 String           @id @default(uuid())
-  email              String           @unique
-  password           String
-  firstName          String
-  lastName           String
-  role               Role             @default(EMPLOYEE)
-  phoneNumber        String?
-  hourlyRate         Decimal          @db.Decimal(10, 2)
-  position           String?
-  onboardingComplete Boolean          @default(false)
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  documents          Document[]
-  shifts             Shift[]
-  timeOffRequests    TimeOffRequest[]
-}
+  id         String   @id @default(uuid())
+  firstName  String
+  lastName   String
+  pin        String
+  role       Role     @default(EMPLOYEE)
+  position   String?
+  hourlyRate Decimal  @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  shifts     Shift[]
 
-model Document {
-  id         String       @id @default(uuid())
-  userId     String
-  type       DocumentType
-  fileUrl    String
-  fileName   String
-  uploadedAt DateTime     @default(now())
-  verified   Boolean      @default(false)
-  user       User         @relation(fields: [userId], references: [id])
-
-  @@index([userId])
+  @@unique([firstName, lastName])
 }
 
 model Shift {
@@ -67,27 +37,21 @@ model Shift {
   userId     String
   clockIn    DateTime
   clockOut   DateTime?
-  breakStart DateTime?
-  breakEnd   DateTime?
   totalHours Decimal?    @db.Decimal(5, 2)
   status     ShiftStatus @default(IN_PROGRESS)
-  notes      String?
   user       User        @relation(fields: [userId], references: [id])
+  breaks     Break[]
 
   @@index([userId, clockIn])
   @@index([status])
 }
 
-model TimeOffRequest {
-  id         String        @id @default(uuid())
-  userId     String
-  startDate  DateTime
-  endDate    DateTime
-  reason     String?
-  status     RequestStatus @default(PENDING)
-  reviewedBy String?
-  reviewedAt DateTime?
-  user       User          @relation(fields: [userId], references: [id])
+model Break {
+  id        String    @id @default(uuid())
+  shiftId   String
+  startTime DateTime
+  endTime   DateTime?
+  shift     Shift     @relation(fields: [shiftId], references: [id])
 
-  @@index([userId, status])
+  @@index([shiftId])
 }
