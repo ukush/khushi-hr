@@ -25,6 +25,7 @@ model User {
   role       Role     @default(EMPLOYEE)
   position   String?
   hourlyRate Decimal  @db.Decimal(10, 2)
+  isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   shifts     Shift[]

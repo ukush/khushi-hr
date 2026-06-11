@@ -5,6 +5,9 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { usersRouter } from './routes/users';
+import { shiftsRouter } from './routes/shifts';
+import { adminRouter } from './routes/admin';
 
 dotenv.config();
 
@@ -15,6 +18,10 @@ app.use(express.json());
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
+
+app.use('/api/users', usersRouter);
+app.use('/api/shifts', shiftsRouter);
+app.use('/api/admin', adminRouter);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

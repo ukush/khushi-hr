@@ -1,10 +1,12 @@
-import React from 'react';
+import { Route, Routes } from 'react-router-dom';
+import ClockInPage from './pages/ClockInPage';
+import AdminPage from './pages/AdminPage';
 
 export default function App() {
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Khushi HR (Frontend)</h1>
-      <p>Vite + React + TypeScript scaffold with React Query ready.</p>
-    </div>
+    <Routes>
+      <Route path="/" element={<ClockInPage />} />
+      <Route path="/admin/*" element={<AdminPage />} />
+    </Routes>
   );
 }
