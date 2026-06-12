@@ -38,6 +38,16 @@ function calculateLiveMs(live: LiveShiftInfo, nowMs: number): number {
   return Math.max(0, nowMs - clockInMs - pausedMs);
 }
 
+const BREAK_FLAG_THRESHOLD_MS = 30 * 60 * 1000;
+
+function calculateLiveBreakMs(live: LiveShiftInfo, nowMs: number): number {
+  let breakMs = live.pausedMs;
+  if (live.onBreak && live.breakStartedAt) {
+    breakMs += nowMs - new Date(live.breakStartedAt).getTime();
+  }
+  return Math.max(0, breakMs);
+}
+
 function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);
@@ -56,25 +66,27 @@ function buildCsv(data: TimesheetResponse, singleDay: boolean): string {
 
   if (singleDay) {
     const day = data.days[0];
-    rows.push(['Employee', 'Position', 'Status', 'Hours', 'Pay']);
+    rows.push(['Employee', 'Position', 'Status', 'Hours', 'Break', 'Pay']);
     for (const employee of data.employees) {
       rows.push([
         `${employee.firstName} ${employee.lastName}`,
         employee.position ?? '',
         employee.status,
         employee.hours[day],
+        employee.breaks[day],
         employee.pay,
       ]);
     }
-    rows.push(['Total', '', '', data.dailyTotals[day], data.grandPayTotal]);
+    rows.push(['Total', '', '', data.dailyTotals[day], data.dailyBreakTotals[day], data.grandPayTotal]);
   } else {
-    rows.push(['Employee', 'Position', ...data.days.map(formatDayLabel), 'Total', 'Pay']);
+    rows.push(['Employee', 'Position', ...data.days.map(formatDayLabel), 'Total', 'Break', 'Pay']);
     for (const employee of data.employees) {
       rows.push([
         `${employee.firstName} ${employee.lastName}`,
         employee.position ?? '',
         ...data.days.map((day) => employee.hours[day]),
         employee.total,
+        employee.totalBreak,
         employee.pay,
       ]);
     }
@@ -83,6 +95,7 @@ function buildCsv(data: TimesheetResponse, singleDay: boolean): string {
       '',
       ...data.days.map((day) => data.dailyTotals[day]),
       data.grandTotal,
+      data.grandBreakTotal,
       data.grandPayTotal,
     ]);
   }
@@ -197,6 +210,7 @@ export default function AdminDashboard({ token, onLogout }: AdminDashboardProps)
                     <th>Total</th>
                   </>
                 )}
+                <th>Break</th>
                 <th>Pay</th>
               </tr>
             </thead>
@@ -236,6 +250,25 @@ export default function AdminDashboard({ token, onLogout }: AdminDashboardProps)
                       <td className="timesheet-table__total">{formatHours(employee.total)}</td>
                     </>
                   )}
+                  <td
+                    className={
+                      (singleDay
+                        ? employee.live
+                          ? calculateLiveBreakMs(employee.live, now) > BREAK_FLAG_THRESHOLD_MS
+                          : employee.breaks[data.days[0]] > 0.5
+                        : employee.breakFlag)
+                        ? 'timesheet-table__break--over'
+                        : undefined
+                    }
+                  >
+                    {singleDay && employee.live ? (
+                      <span className="timesheet-table__break-live">
+                        {formatDuration(calculateLiveBreakMs(employee.live, now))}
+                      </span>
+                    ) : (
+                      formatHours(singleDay ? employee.breaks[data.days[0]] : employee.totalBreak)
+                    )}
+                  </td>
                   <td className="timesheet-table__total">{formatPay(employee.pay)}</td>
                 </tr>
               ))}
@@ -253,6 +286,9 @@ export default function AdminDashboard({ token, onLogout }: AdminDashboardProps)
                     <td className="timesheet-table__total">{formatHours(data.grandTotal)}</td>
                   </>
                 )}
+                <td>
+                  {formatHours(singleDay ? data.dailyBreakTotals[data.days[0]] : data.grandBreakTotal)}
+                </td>
                 <td className="timesheet-table__total">{formatPay(data.grandPayTotal)}</td>
               </tr>
             </tfoot>

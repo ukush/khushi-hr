@@ -31,7 +31,10 @@ export interface TimesheetEmployee {
   status: EmployeeStatus;
   live: LiveShiftInfo | null;
   hours: Record<string, number>;
+  breaks: Record<string, number>;
   total: number;
+  totalBreak: number;
+  breakFlag: boolean;
   hourlyRate: number;
   pay: number;
 }
@@ -40,7 +43,9 @@ export interface TimesheetResponse {
   days: string[];
   employees: TimesheetEmployee[];
   dailyTotals: Record<string, number>;
+  dailyBreakTotals: Record<string, number>;
   grandTotal: number;
+  grandBreakTotal: number;
   grandPayTotal: number;
 }
 

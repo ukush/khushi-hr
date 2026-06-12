@@ -3,7 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
-import { calculateShiftHours } from '../lib/hours';
+import { BREAK_FLAG_THRESHOLD_HOURS, calculateBreakHours, calculateShiftHours } from '../lib/hours';
 import { addDays, enumerateDays, getDateKey, parseDateKey } from '../lib/dates';
 import { requireAdmin } from '../middleware/requireAdmin';
 import { adminUsersRouter } from './adminUsers';
@@ -83,26 +83,41 @@ adminRouter.get('/timesheet', requireAdmin, async (req, res) => {
   const activeShiftByUser = new Map(activeShifts.map((shift) => [shift.userId, shift]));
 
   const dailyTotals: Record<string, number> = {};
+  const dailyBreakTotals: Record<string, number> = {};
   for (const day of days) {
     dailyTotals[day] = 0;
+    dailyBreakTotals[day] = 0;
   }
 
   const result = employees.map((employee) => {
     const hours: Record<string, number> = {};
+    const breaks: Record<string, number> = {};
     for (const day of days) {
       hours[day] = 0;
+      breaks[day] = 0;
     }
 
     for (const shift of employee.shifts) {
       const dateKey = getDateKey(shift.clockIn);
-      hours[dateKey] = (hours[dateKey] ?? 0) + calculateShiftHours(shift, now);
+      const workHours = calculateShiftHours(shift, now);
+      const breakHours = calculateBreakHours(shift, now);
+      hours[dateKey] = (hours[dateKey] ?? 0) + workHours + breakHours;
+      breaks[dateKey] = (breaks[dateKey] ?? 0) + breakHours;
     }
 
     let total = 0;
+    let totalBreak = 0;
+    let breakFlag = false;
     for (const day of days) {
       hours[day] = round2(hours[day]);
+      breaks[day] = round2(breaks[day]);
+      if (breaks[day] > BREAK_FLAG_THRESHOLD_HOURS) {
+        breakFlag = true;
+      }
       dailyTotals[day] += hours[day];
+      dailyBreakTotals[day] += breaks[day];
       total += hours[day];
+      totalBreak += breaks[day];
     }
 
     const activeShift = activeShiftByUser.get(employee.id);
@@ -135,17 +150,23 @@ adminRouter.get('/timesheet', requireAdmin, async (req, res) => {
       status,
       live,
       hours,
+      breaks,
       total: round2(total),
+      totalBreak: round2(totalBreak),
+      breakFlag,
       hourlyRate,
       pay: round2(total * hourlyRate),
     };
   });
 
   let grandTotal = 0;
+  let grandBreakTotal = 0;
   let grandPayTotal = 0;
   for (const day of days) {
     dailyTotals[day] = round2(dailyTotals[day]);
+    dailyBreakTotals[day] = round2(dailyBreakTotals[day]);
     grandTotal += dailyTotals[day];
+    grandBreakTotal += dailyBreakTotals[day];
   }
   for (const employee of result) {
     grandPayTotal += employee.pay;
@@ -155,7 +176,9 @@ adminRouter.get('/timesheet', requireAdmin, async (req, res) => {
     days,
     employees: result,
     dailyTotals,
+    dailyBreakTotals,
     grandTotal: round2(grandTotal),
+    grandBreakTotal: round2(grandBreakTotal),
     grandPayTotal: round2(grandPayTotal),
   });
 });

@@ -593,6 +593,7 @@ button {
   padding: 0.75rem 1rem;
   text-align: right;
   border-bottom: 1px solid var(--color-border);
+  font-variant-numeric: tabular-nums;
 }
 
 .timesheet-table th:first-child,
@@ -631,6 +632,16 @@ button {
   color: var(--color-gold-dark);
 }
 
+.timesheet-table__break--over {
+  font-weight: 700;
+  color: var(--color-error);
+}
+
+.timesheet-table__break-live {
+  display: inline-block;
+  min-width: 4.5em;
+}
+
 .timesheet-table tbody tr:last-child td {
   border-bottom: none;
 }
@@ -647,6 +658,8 @@ button {
 .timesheet-live {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
+  min-width: 5.5em;
   gap: 0.4rem;
   font-family: var(--font-heading);
   font-weight: 700;
@@ -696,5 +709,47 @@ button {
 
   .modal {
     border-radius: var(--radius);
+  }
+}
+
+@media (max-width: 640px) {
+  .app__header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .admin-header__right {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 0.6rem;
+  }
+
+  .admin-nav {
+    flex: 1 1 auto;
+  }
+
+  .admin-nav__btn {
+    flex: 1;
+  }
+
+  .admin-header__right .btn {
+    flex: 1 1 auto;
+  }
+
+  .admin-dashboard__date-nav {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-dashboard__range-label {
+    flex: 1 1 100%;
+    order: -1;
+    min-width: 0;
+  }
+
+  .admin-dashboard__date-nav .btn {
+    flex: 1 1 auto;
   }
 }
