@@ -125,6 +125,8 @@ adminRouter.get('/timesheet', requireAdmin, async (req, res) => {
       };
     }
 
+    const hourlyRate = Number(employee.hourlyRate);
+
     return {
       id: employee.id,
       firstName: employee.firstName,
@@ -134,13 +136,19 @@ adminRouter.get('/timesheet', requireAdmin, async (req, res) => {
       live,
       hours,
       total: round2(total),
+      hourlyRate,
+      pay: round2(total * hourlyRate),
     };
   });
 
   let grandTotal = 0;
+  let grandPayTotal = 0;
   for (const day of days) {
     dailyTotals[day] = round2(dailyTotals[day]);
     grandTotal += dailyTotals[day];
+  }
+  for (const employee of result) {
+    grandPayTotal += employee.pay;
   }
 
   res.json({
@@ -148,5 +156,6 @@ adminRouter.get('/timesheet', requireAdmin, async (req, res) => {
     employees: result,
     dailyTotals,
     grandTotal: round2(grandTotal),
+    grandPayTotal: round2(grandPayTotal),
   });
 });

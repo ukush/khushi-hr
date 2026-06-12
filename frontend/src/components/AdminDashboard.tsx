@@ -25,6 +25,10 @@ function formatHours(hours: number): string {
   return hours === 0 ? '–' : hours.toFixed(2);
 }
 
+function formatPay(pay: number): string {
+  return `£${pay.toFixed(2)}`;
+}
+
 function calculateLiveMs(live: LiveShiftInfo, nowMs: number): number {
   const clockInMs = new Date(live.clockIn).getTime();
   let pausedMs = live.pausedMs;
@@ -52,27 +56,35 @@ function buildCsv(data: TimesheetResponse, singleDay: boolean): string {
 
   if (singleDay) {
     const day = data.days[0];
-    rows.push(['Employee', 'Position', 'Status', 'Hours']);
+    rows.push(['Employee', 'Position', 'Status', 'Hours', 'Pay']);
     for (const employee of data.employees) {
       rows.push([
         `${employee.firstName} ${employee.lastName}`,
         employee.position ?? '',
         employee.status,
         employee.hours[day],
+        employee.pay,
       ]);
     }
-    rows.push(['Total', '', '', data.dailyTotals[day]]);
+    rows.push(['Total', '', '', data.dailyTotals[day], data.grandPayTotal]);
   } else {
-    rows.push(['Employee', 'Position', ...data.days.map(formatDayLabel), 'Total']);
+    rows.push(['Employee', 'Position', ...data.days.map(formatDayLabel), 'Total', 'Pay']);
     for (const employee of data.employees) {
       rows.push([
         `${employee.firstName} ${employee.lastName}`,
         employee.position ?? '',
         ...data.days.map((day) => employee.hours[day]),
         employee.total,
+        employee.pay,
       ]);
     }
-    rows.push(['Total', '', ...data.days.map((day) => data.dailyTotals[day]), data.grandTotal]);
+    rows.push([
+      'Total',
+      '',
+      ...data.days.map((day) => data.dailyTotals[day]),
+      data.grandTotal,
+      data.grandPayTotal,
+    ]);
   }
 
   return rows.map((row) => row.map(csvEscape).join(',')).join('\n');
@@ -185,6 +197,7 @@ export default function AdminDashboard({ token, onLogout }: AdminDashboardProps)
                     <th>Total</th>
                   </>
                 )}
+                <th>Pay</th>
               </tr>
             </thead>
             <tbody>
@@ -223,6 +236,7 @@ export default function AdminDashboard({ token, onLogout }: AdminDashboardProps)
                       <td className="timesheet-table__total">{formatHours(employee.total)}</td>
                     </>
                   )}
+                  <td className="timesheet-table__total">{formatPay(employee.pay)}</td>
                 </tr>
               ))}
             </tbody>
@@ -239,6 +253,7 @@ export default function AdminDashboard({ token, onLogout }: AdminDashboardProps)
                     <td className="timesheet-table__total">{formatHours(data.grandTotal)}</td>
                   </>
                 )}
+                <td className="timesheet-table__total">{formatPay(data.grandPayTotal)}</td>
               </tr>
             </tfoot>
           </table>

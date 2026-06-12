@@ -32,6 +32,8 @@ export interface TimesheetEmployee {
   live: LiveShiftInfo | null;
   hours: Record<string, number>;
   total: number;
+  hourlyRate: number;
+  pay: number;
 }
 
 export interface TimesheetResponse {
@@ -39,6 +41,7 @@ export interface TimesheetResponse {
   employees: TimesheetEmployee[];
   dailyTotals: Record<string, number>;
   grandTotal: number;
+  grandPayTotal: number;
 }
 
 export type UserRole = 'EMPLOYEE' | 'ADMIN';
